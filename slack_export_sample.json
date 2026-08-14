@@ -1,0 +1,207 @@
+[
+  {
+    "channel": "general",
+    "user": "Sara",
+    "ts": 1773306000.0,
+    "datetime": "2026-03-12 09:00",
+    "text": "for anything on the billing service, I'm the owner \u2014 ping me. currently mid-refactor of the invoicing flow."
+  },
+  {
+    "channel": "general",
+    "user": "Miguel",
+    "ts": 1773306300.0,
+    "datetime": "2026-03-12 09:05",
+    "text": "and I own payments + core infra (Stripe integration, webhooks, the deploy pipeline)."
+  },
+  {
+    "channel": "general",
+    "user": "Priya",
+    "ts": 1773824400.0,
+    "datetime": "2026-03-18 09:00",
+    "text": "I'm on the on-call rotation this quarter with Miguel. incident escalations come to us first."
+  },
+  {
+    "channel": "general",
+    "user": "Lena",
+    "ts": 1773997200.0,
+    "datetime": "2026-03-20 09:00",
+    "text": "data + the events service is me. if you need anything on analytics or the event schema, that's my area."
+  },
+  {
+    "channel": "engineering",
+    "user": "Miguel",
+    "ts": 1775559720.0,
+    "datetime": "2026-04-07 11:02",
+    "text": "notifications service is stuck \u2014 a bunch of emails never went out overnight. looks like the queue consumer died and messages piled up with no retry."
+  },
+  {
+    "channel": "engineering",
+    "user": "Dev",
+    "ts": 1775560800.0,
+    "datetime": "2026-04-07 11:20",
+    "text": "added a dead-letter queue + retry-with-backoff so a single bad message can't block the whole consumer. backfilled the missed ones.",
+    "thread_ts": 1775559720.0
+  },
+  {
+    "channel": "engineering",
+    "user": "Priya",
+    "ts": 1777817400.0,
+    "datetime": "2026-05-03 14:10",
+    "text": "prod was down ~20 min. the payment webhook was silently dropping retries after we bumped the Stripe timeout last week. no error surfaced, just missing confirmations."
+  },
+  {
+    "channel": "engineering",
+    "user": "Miguel",
+    "ts": 1777817640.0,
+    "datetime": "2026-05-03 14:14",
+    "text": "oof. so the retries were being swallowed? how'd you catch it?",
+    "thread_ts": 1777817400.0
+  },
+  {
+    "channel": "engineering",
+    "user": "Priya",
+    "ts": 1777817940.0,
+    "datetime": "2026-05-03 14:19",
+    "text": "yeah. fixed it by adding idempotency keys on the webhook handler so retries are safe and don't get deduped away. confirmations are flowing again.",
+    "thread_ts": 1777817400.0
+  },
+  {
+    "channel": "engineering",
+    "user": "Miguel",
+    "ts": 1777818120.0,
+    "datetime": "2026-05-03 14:22",
+    "text": "nice. can you write that up in the incident doc? this'll bite us again otherwise.",
+    "thread_ts": 1777817400.0
+  },
+  {
+    "channel": "general",
+    "user": "Tom",
+    "ts": 1778834700.0,
+    "datetime": "2026-05-15 08:45",
+    "text": "reminder: standup moved to 10am on Fridays."
+  },
+  {
+    "channel": "general",
+    "user": "Dev",
+    "ts": 1778934600.0,
+    "datetime": "2026-05-16 12:30",
+    "text": "anyone up for lunch at the Thai place?"
+  },
+  {
+    "channel": "general",
+    "user": "Priya",
+    "ts": 1780419600.0,
+    "datetime": "2026-06-02 17:00",
+    "text": "out on PTO next week, back the 9th. Miguel covering on-call."
+  },
+  {
+    "channel": "architecture",
+    "user": "Lena",
+    "ts": 1781085600.0,
+    "datetime": "2026-06-10 10:00",
+    "text": "proposal: move the events service off Postgres to MongoDB. our event payloads keep changing shape and the migrations are painful. flexible schema would help us move faster."
+  },
+  {
+    "channel": "architecture",
+    "user": "Dev",
+    "ts": 1781086500.0,
+    "datetime": "2026-06-10 10:15",
+    "text": "I'm wary. we lean on transactions for the events->billing handoff. losing strong consistency there scares me.",
+    "thread_ts": 1781085600.0
+  },
+  {
+    "channel": "architecture",
+    "user": "Sara",
+    "ts": 1781087160.0,
+    "datetime": "2026-06-10 10:26",
+    "text": "billing definitely needs consistency on that handoff. but if events itself is append-mostly, Mongo could be fine for just that service.",
+    "thread_ts": 1781085600.0
+  },
+  {
+    "channel": "architecture",
+    "user": "Lena",
+    "ts": 1781170200.0,
+    "datetime": "2026-06-11 09:30",
+    "text": "decision: we'll move ONLY the events service to MongoDB, keep billing on Postgres. revisit in a month.",
+    "thread_ts": 1781085600.0
+  },
+  {
+    "channel": "random",
+    "user": "Miguel",
+    "ts": 1781967600.0,
+    "datetime": "2026-06-20 15:00",
+    "text": "the office coffee machine is broken again \ud83d\ude2d"
+  },
+  {
+    "channel": "product",
+    "user": "Tom",
+    "ts": 1782900000.0,
+    "datetime": "2026-07-01 10:00",
+    "text": "Project Falcon kickoff: goal is self-serve onboarding so new customers can set up without sales. target GA end of Q3."
+  },
+  {
+    "channel": "product",
+    "user": "Sara",
+    "ts": 1783504800.0,
+    "datetime": "2026-07-08 10:00",
+    "text": "Falcon update: billing side of self-serve is done in staging. blocked on the events service refactor before we can wire usage metering."
+  },
+  {
+    "channel": "general",
+    "user": "Sara",
+    "ts": 1783674900.0,
+    "datetime": "2026-07-10 09:15",
+    "text": "kudos to Dev for the DLQ fix back in April, saved us during last night's traffic spike."
+  },
+  {
+    "channel": "engineering",
+    "user": "Dev",
+    "ts": 1783675200.0,
+    "datetime": "2026-07-10 09:20",
+    "text": "\ud83d\ude4f the backoff logic is holding up nicely."
+  },
+  {
+    "channel": "architecture",
+    "user": "Dev",
+    "ts": 1784736300.0,
+    "datetime": "2026-07-22 16:05",
+    "text": "update on the Mongo move: we've hit consistency headaches on the events->billing sync, exactly what I worried about. duplicate and out-of-order events."
+  },
+  {
+    "channel": "architecture",
+    "user": "Lena",
+    "ts": 1784799900.0,
+    "datetime": "2026-07-23 09:45",
+    "text": "agreed it's not worth it. decision reversed: we're moving the events service back to Postgres and using JSONB for the flexible payloads. best of both.",
+    "thread_ts": 1784736300.0
+  },
+  {
+    "channel": "architecture",
+    "user": "Sara",
+    "ts": 1784800320.0,
+    "datetime": "2026-07-23 09:52",
+    "text": "good call. JSONB gives us the schema flexibility without giving up transactions.",
+    "thread_ts": 1784736300.0
+  },
+  {
+    "channel": "product",
+    "user": "Lena",
+    "ts": 1784973600.0,
+    "datetime": "2026-07-25 10:00",
+    "text": "Falcon: now that events is back on Postgres, usage metering is unblocked. picking it back up this week."
+  },
+  {
+    "channel": "engineering",
+    "user": "Priya",
+    "ts": 1785589200.0,
+    "datetime": "2026-08-01 13:00",
+    "text": "heads up: bumping the Stripe API version next sprint. will re-verify the webhook idempotency handling before we ship."
+  },
+  {
+    "channel": "product",
+    "user": "Tom",
+    "ts": 1785924000.0,
+    "datetime": "2026-08-05 10:00",
+    "text": "Falcon risk: GA date is tight. if metering slips past mid-Aug we should push GA to early Q4."
+  }
+]

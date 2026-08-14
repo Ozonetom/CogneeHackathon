@@ -1,0 +1,5 @@
+Priya in #engineering: prod was down ~20 min. The payment webhook was silently dropping retries after we bumped the Stripe timeout. Fixed it with idempotency keys.
+
+Tom in #general: reminder, standup moved to 10am on Fridays.
+
+Sara in #engineering: deployed the new billing service to staging, looks stable.

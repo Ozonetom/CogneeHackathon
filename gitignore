@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Cognee / project artifacts
+.artifacts/
+.cognee_system/
+cognee_system/
+*.log
+*.db
+
+# Secrets — never commit real keys
+.env
+secrets.py
+
+# OS junk
+.DS_Store
+Thumbs.db
