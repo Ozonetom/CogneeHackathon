@@ -1,0 +1,6 @@
+cognee[neo4j,fastembed]
+cognee-community-vector-adapter-qdrant
+streamlit
+python-dotenv
+filelock
+slack_bolt

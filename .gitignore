@@ -8,8 +8,15 @@ venv/
 .artifacts/
 .cognee_system/
 cognee_system/
+.cognee_local_system/
+.cognee_cloud_system/
+.data_storage_local/
+.data_storage_cloud/
+.cognee_ledger/
+.cognee_sync/
 *.log
 *.db
+*.sqlite3
 
 # Secrets — never commit real keys
 .env
