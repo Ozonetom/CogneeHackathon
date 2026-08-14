@@ -1,30 +1,26 @@
 # app.py — the demo. Dumb keyword search vs Cognee + Qdrant/Neo4j memory, plus the knowledge graph.
 #
-# BEFORE RUNNING: paste the SAME credentials you put in build_memory.py.
-# Then, after running build_memory.py once:  streamlit run app.py
+# Credentials come from .env (copy .env.example -> .env and fill it in) instead of
+# being pasted into this file. Talks to whichever backend is currently reachable:
+# cloud (Qdrant Cloud + Neo4j Aura) when online, local (Docker Qdrant + Docker
+# Neo4j, last LOCAL_RETENTION_DAYS only) when offline. A sync (push local-only
+# messages to cloud, then rebuild the local window) runs once per browser session
+# and again every SYNC_MIN_INTERVAL_HOURS in the background -- see scheduler.py.
+#
+# Before running: `docker compose up -d`, fill in .env, then `python build_memory.py`
+# once to seed the memory. Then: streamlit run app.py
 
+import asyncio
+import json
 import os
 
-# Same access-control switch as build_memory.py (required with Qdrant).
-os.environ["ENABLE_BACKEND_ACCESS_CONTROL"] = "false"
-
-# Your hosted LLM key (event key, or OpenAI).
-os.environ["LLM_API_KEY"] = ""   # <-- PASTE LLM KEY HERE
-
-# --- Qdrant (vector store) ---
-QDRANT_URL = ""
-QDRANT_KEY = ""
-
-# --- Neo4j Aura (graph store) ---
-NEO4J_URL  = ""
-NEO4J_USER = ""
-NEO4J_PASS = ""
-
-import json
-import asyncio
 import streamlit as st
 import streamlit.components.v1 as components
 
+import ledger
+import scheduler
+import store_config as sc
+from connectivity import cloud_reachable
 from keyword_search import keyword_search
 
 with open("slack_export_sample.json", "r", encoding="utf-8") as f:
@@ -35,27 +31,56 @@ Q2 = "What is our current database plan for the events service?"
 Q3 = "Who should I talk to about the checkout incident, and is there any related risk I should know about?"
 
 
-def cognee_answer(question):
-    """Query the already-built Cognee memory (populated by build_memory.py)."""
-    from cognee_community_vector_adapter_qdrant import register  # noqa: F401
-    from cognee import config, search, SearchType
+@st.cache_data(ttl=300)
+def check_reachable() -> bool:
+    return asyncio.run(cloud_reachable())
 
-    config.set_relational_db_config({"db_provider": "sqlite"})
-    config.set_graph_db_config({
-        "graph_database_provider": "neo4j",
-        "graph_database_url": NEO4J_URL,
-        "graph_database_username": NEO4J_USER,
-        "graph_database_password": NEO4J_PASS,
-    })
-    config.set_vector_db_config({
-        "vector_db_provider": "qdrant",
-        "vector_db_url": QDRANT_URL,
-        "vector_db_key": QDRANT_KEY,
-    })
-    return asyncio.run(search(query_type=SearchType.GRAPH_COMPLETION, query_text=question))
+
+def cognee_answer(question: str):
+    """Query whichever backend is currently reachable."""
+    target = "cloud" if check_reachable() else "local"
+    sc.apply_target(target)
+    from cognee import search, SearchType
+
+    results = asyncio.run(search(query_type=SearchType.GRAPH_COMPLETION, query_text=question))
+    return target, results
 
 
 st.set_page_config(page_title="Give Your Slack a Memory", layout="wide")
+
+# Runs once per process (safe under Streamlit reruns -- module top level only
+# executes once) and once per browser session, each gated by the 12h recency
+# check inside scheduler.maybe_run_sync().
+scheduler.ensure_background_scheduler_started()
+if "synced_this_session" not in st.session_state:
+    ledger.seed_from_json("slack_export_sample.json")
+    scheduler.maybe_run_sync()
+    st.session_state["synced_this_session"] = True
+
+with st.sidebar:
+    st.subheader("Sync status")
+    online = check_reachable()
+    st.markdown(("🟢 Cloud reachable" if online else "🔴 Offline — using local backup"))
+    info = scheduler.last_sync_info()
+    if info.get("last_sync_finished_at"):
+        st.caption(f"Last synced: {info['last_sync_finished_at']}")
+        st.caption(f"Pushed: {info.get('last_pushed', 0)} · Local window: {info.get('last_local_window', 0)}")
+    else:
+        st.caption("Never synced yet.")
+    if info.get("last_status") == "error":
+        st.caption(f"Last sync error: {info.get('last_error', '')}")
+    if st.button("Sync now"):
+        with st.spinner("Syncing..."):
+            check_reachable.clear()
+            result = scheduler.maybe_run_sync(force=True)
+        if result and result.status == "ok":
+            st.success(f"Synced. Pushed {result.pushed}, local window {result.local_window}.")
+        elif result and result.status == "offline":
+            st.warning("Still offline — nothing to sync against.")
+        elif result and result.status == "error":
+            st.error(f"Sync failed: {result.error}")
+        st.rerun()
+
 st.title("Give Your Slack a Memory")
 st.caption("Same question, two engines. Left: ordinary keyword search. Right: Cognee + Qdrant connected memory.")
 
@@ -92,7 +117,8 @@ if st.button("Search", type="primary"):
         st.subheader("Cognee + Qdrant memory")
         try:
             with st.spinner("Recalling from connected memory..."):
-                results = cognee_answer(question)
+                target, results = cognee_answer(question)
+            st.caption(f"Answered from: {target}")
             for r in results:
                 st.success(r)
         except Exception as e:

@@ -1,0 +1,26 @@
+services:
+  qdrant-local:
+    image: qdrant/qdrant:latest
+    container_name: cognee-hackathon-qdrant-local
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC API
+    volumes:
+      - qdrant_local_storage:/qdrant/storage
+    restart: unless-stopped
+
+  neo4j-local:
+    image: neo4j:5
+    container_name: cognee-hackathon-neo4j-local
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_LOCAL_PASS:-localpassword}
+    ports:
+      - "7474:7474"   # Browser UI
+      - "7687:7687"   # Bolt
+    volumes:
+      - neo4j_local_data:/data
+    restart: unless-stopped
+
+volumes:
+  qdrant_local_storage:
+  neo4j_local_data:
